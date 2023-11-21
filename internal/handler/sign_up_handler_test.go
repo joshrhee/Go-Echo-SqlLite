@@ -3,12 +3,13 @@ package handler
 import (
 	"context"
 	"database/sql"
-	"github.com/mattn/go-sqlite3"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/mattn/go-sqlite3"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	clocklib "github.com/benbjohnson/clock"
@@ -34,15 +35,15 @@ func Test_SignUp(t *testing.T) {
 		expectedJSON string
 	}{
 		{
-			name: "가입_성공",
+			name: "Signup Succeed",
 			reqBody: `{
-			  "nickname":"멍뭉이",
+			  "nickname":"dog",
 			  "username":"identity",
 			  "password":"identity_hard_password"
 			}`,
 			mockFunc: func(m mocks) func(ctx context.Context, db *sql.DB, req *http.Request) {
 				return func(ctx context.Context, db *sql.DB, req *http.Request) {
-					m.dbRecorder.ExpectExec("INSERT INTO `user`").WithArgs("멍뭉이", "identity", "identity_hard_password", now, now).WillReturnResult(sqlmock.NewResult(123456, 1))
+					m.dbRecorder.ExpectExec("INSERT INTO `user`").WithArgs("dog", "identity", "identity_hard_password", now, now).WillReturnResult(sqlmock.NewResult(123456, 1))
 				}
 			},
 
@@ -50,29 +51,29 @@ func Test_SignUp(t *testing.T) {
 			expectedJSON: `{"user_id":123456}`,
 		},
 		{
-			name: "가입_실패_닉네임_제한_초과",
+			name: "Signup Failed_Nickname exceed 12 lengths",
 			reqBody: `{
-			  "nickname":"오이오이오이오이오이오이오",
+			  "nickname":"longernicknamelongernickname",
 			  "username":"identity",
 			  "password":"identity_hard_password"
 			}`,
 
 			expectedCode: http.StatusBadRequest,
-			expectedJSON: `{"reason":"닉네임의 길이는 12자를 넘을 수 없습니다."}`,
+			expectedJSON: `{"reason":"Nickname can't exceed 12 lengths."}`,
 		},
 		{
-			name: "가입_실패_아이디_제한_초과",
+			name: "Signup Failed_Username exceed 12 lengths",
 			reqBody: `{
-			  "nickname":"멍뭉이",
+			  "nickname":"dog",
 			  "username":"identityidentityidentity",
 			  "password":"identity_hard_password"
 			}`,
 
 			expectedCode: http.StatusBadRequest,
-			expectedJSON: `{"reason":"아이디의 길이는 20자를 넘을 수 없습니다."}`,
+			expectedJSON: `{"reason":"Username can't exceed 12 lengths."}`,
 		},
 		{
-			name: "가입_실패_비밀번호_제한_초과",
+			name: "Signup Failed_Password exceed 50 lengths",
 			reqBody: `{
 			  "nickname":"멍뭉이",
 			  "username":"identity",
@@ -80,10 +81,10 @@ func Test_SignUp(t *testing.T) {
 			}`,
 
 			expectedCode: http.StatusBadRequest,
-			expectedJSON: `{"reason":"비밀번호의 길이는 50자를 넘을 수 없습니다."}`,
+			expectedJSON: `{"reason":"Password can't exceed 50 lengths."}`,
 		},
 		{
-			name: "가입_실패_아이디_중복",
+			name: "Signup Failed_Username already exist",
 			reqBody: `{
 			  "nickname":"멍뭉이",
 			  "username":"identity",
@@ -101,7 +102,7 @@ func Test_SignUp(t *testing.T) {
 			},
 
 			expectedCode: http.StatusBadRequest,
-			expectedJSON: `{"reason":"이미 사용중인 아이디 입니다."}`,
+			expectedJSON: `{"reason":"Username is already exist"}`,
 		},
 	}
 
